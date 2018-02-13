@@ -1,0 +1,68 @@
+#!/bin/bash
+#
+# redis-newrelic-agent    Redis Newrelic Plugin
+#
+# chkconfig: 345 70 30
+# description: Redis Newrelic Plugin
+# processname: redis-newrelic-agent
+
+# Source function library.
+. /etc/init.d/functions
+
+RETVAL=0
+prog="redis-newrelic-agent"
+LOCKFILE=/var/lock/subsys/$prog
+
+REDIS_DIR=/usr/local/newrelic/newrelic_redis_plugin
+REDIS_USER=root
+AGENT=$REDIS_DIR/newrelic_redis_agent
+PIDFILE=/var/run/newrelic/redis-newrelic-agent.pid
+
+start() {
+        echo -n "Starting $prog: "
+        daemon --user $REDIS_USER $AGENT --pid $PIDFILE -d
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && touch $LOCKFILE
+        echo
+        return $RETVAL
+}
+
+stop() {
+        echo -n "Shutting down $prog: "
+        $AGENT --pid $PIDFILE -k
+        RETVAL=$?
+        [ $RETVAL -eq 0 ] && rm -f $LOCKFILE
+        echo
+        return $RETVAL
+}
+
+status() {
+    if [ -f ${PIDFILE} ] && [ $(pgrep -F ${PIDFILE}) ] ; then
+        status="running"
+    else
+        status="stopped"
+    fi
+
+    echo $"$prog is $status"
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    status)
+        status
+        ;;
+    restart)
+        stop
+        start
+        ;;
+    *)
+        echo "Usage: $prog {start|stop|status|restart}"
+        exit 1
+        ;;
+esac
+exit $RETVAL
